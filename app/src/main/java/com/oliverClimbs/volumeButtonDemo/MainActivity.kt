@@ -8,25 +8,36 @@ import com.oliverClimbs.volumeButtonDemo.ForegroundService.Companion.TAG
 
 class MainActivity : AppCompatActivity()
 {
-  private lateinit var service: Intent
+  private var configurationChange = false
 
+  // ---------------------------------------------------------------------------------------------
   override fun onCreate(savedInstanceState: Bundle?)
   {
     super.onCreate(savedInstanceState)
     setContentView(R.layout.activity_main)
 
-    service = Intent(ForegroundService.ACTION_FOREGROUND_WAKELOCK).setClass(this,
-                                                                            ForegroundService::class.java)
-
-    startService(service)
+    if (!configurationChange)
+      startService(Intent(ForegroundService.ACTION_FOREGROUND_WAKELOCK).setClass(this,
+                                                                                 ForegroundService::class.java))
 
   }
 
+  // ---------------------------------------------------------------------------------------------
   override fun onDestroy()
   {
     Log.d(TAG, "MainActivity: onDestroy")
+
+    configurationChange =
+      if (isChangingConfigurations)
+        true
+      else
+      {
+        stopService(Intent(this, ForegroundService::class.java))
+        false
+
+      }
+
     super.onDestroy()
-    stopService(service)
 
   }
 }
