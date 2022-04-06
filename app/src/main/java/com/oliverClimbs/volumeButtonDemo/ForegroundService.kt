@@ -34,7 +34,6 @@ class ForegroundService : Service()
 
   override fun onCreate()
   {
-    Log.i(TAG, "ForegroundService: onCreate")
     super.onCreate()
 
     volumeButtonHelper = VolumeButtonHelper(this,
@@ -46,27 +45,27 @@ class ForegroundService : Service()
       {
         override fun onVolumeChange(direction: VolumeButtonHelper.Direction)
         {
-          Log.d(TAG, "onVolumeChange: $direction")
+          Log.i(TAG, "onVolumeChange: $direction")
         }
 
         override fun onVolumePress(count: Int)
         {
-          Log.d(TAG, "onVolumePress: $count")
+          Log.i(TAG, "onVolumePress: $count")
         }
 
         override fun onSinglePress()
         {
-          Log.d(TAG, "onSinglePress")
+          Log.i(TAG, "onSinglePress")
         }
 
         override fun onDoublePress()
         {
-          Log.d(TAG, "onDoublePress")
+          Log.i(TAG, "onDoublePress")
         }
 
         override fun onLongPress()
         {
-          Log.d(TAG, "onLongPress")
+          Log.i(TAG, "onLongPress")
         }
       })
   }
@@ -77,28 +76,18 @@ class ForegroundService : Service()
     super.onStartCommand(intent, flags, startId)
 
     if (intent?.action == ACTION_FOREGROUND || intent?.action == ACTION_FOREGROUND_WAKELOCK)
-    {
-      val notification = Notification.Builder(this, CHANNEL_ID).apply {
-        setTicker("Status")
-        setWhen(System.currentTimeMillis())
-        setContentTitle("Volume Button Demo")
-        setContentText("Active")
-      }.build()
-
       startForeground(R.string.foreground_service_started,
-                      notification)
-
-    }
+                      Notification.Builder(this, CHANNEL_ID).build())
 
     if (intent?.action == ACTION_FOREGROUND_WAKELOCK)
     {
       if (wakeLock == null)
       {
-        wakeLock = getSystemService(PowerManager::class.java)!!.newWakeLock(
+        wakeLock = getSystemService(PowerManager::class.java)?.newWakeLock(
           PARTIAL_WAKE_LOCK,
           WAKELOCK_TAG)
 
-        wakeLock!!.acquire()
+        wakeLock?.acquire()
 
       }
       else
@@ -121,7 +110,6 @@ class ForegroundService : Service()
 
   override fun onDestroy()
   {
-    Log.i(TAG, "ForegroundService: onDestroy")
     super.onDestroy()
     releaseWakeLock()
 

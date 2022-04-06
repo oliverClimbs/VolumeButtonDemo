@@ -7,8 +7,7 @@ import android.content.IntentFilter
 import android.media.AudioManager
 import android.media.AudioManager.STREAM_MUSIC
 import android.media.MediaPlayer
-import android.os.PowerManager
-import android.provider.Settings
+import android.os.PowerManager.PARTIAL_WAKE_LOCK
 import android.util.Log
 import com.oliverClimbs.volumeButtonDemo.ForegroundService.Companion.TAG
 import com.oliverClimbs.volumeButtonDemo.VolumeButtonHelper.Direction.*
@@ -19,7 +18,7 @@ import kotlinx.coroutines.launch
 
 class VolumeButtonHelper(private var context: Context,
                          private var stream: Int? = null,
-                         private var enabledScreenOff: Boolean)
+                         enabledScreenOff: Boolean)
 {
   companion object
   {
@@ -69,6 +68,23 @@ class VolumeButtonHelper(private var context: Context,
       maxVolume = audioManager.getStreamMaxVolume(STREAM_MUSIC)
       halfVolume = (minVolume + maxVolume) / 2
 
+      /*************************************
+       * BroadcastReceiver does not get triggered for VOLUME_CHANGE_ACTION
+       * if the screen is off and no media is playing.
+       * Playing a silent media file or giving your app a heartbeat solves that.
+       *************************************/
+      if (enabledScreenOff)
+      {
+        mediaPlayer =
+          MediaPlayer.create(context,
+                             R.raw.silence)
+            .apply {
+              isLooping = true
+              setWakeMode(context, PARTIAL_WAKE_LOCK)
+              start()
+
+            }
+      }
     }
     else
       Log.e(TAG, "Unable to initialize AudioManager")
@@ -78,22 +94,6 @@ class VolumeButtonHelper(private var context: Context,
   // ---------------------------------------------------------------------------------------------
   fun registerVolumeChangeListener(volumeChangeListener: VolumeChangeListener)
   {
-    /*************************************
-     * BroadcastReceiver does not get triggered for VOLUME_CHANGE_ACTION
-     * if the screen is off and no media is playing.
-     * Playing a silent media files solves that.
-     *************************************/
-    if (enabledScreenOff)
-    {
-      mediaPlayer =
-        MediaPlayer.create(context, Settings.System.DEFAULT_RINGTONE_URI).apply {
-          isLooping = true
-          setWakeMode(context, PowerManager.PARTIAL_WAKE_LOCK)
-          start()
-
-        }
-    }
-
     if (volumeBroadCastReceiver == null)
     {
       this.volumeChangeListener = volumeChangeListener
@@ -159,8 +159,6 @@ class VolumeButtonHelper(private var context: Context,
 
         if (currentVolume != -1)
         {
-          volumePushes += 0.5 // For some unknown reason (to me), onReceive gets called twice for every button push
-
           if (currentVolume != priorVolume)
           {
             if (currentVolume > priorVolume)
@@ -172,11 +170,13 @@ class VolumeButtonHelper(private var context: Context,
 
           }
 
+          volumePushes += 0.5 // For some unknown reason (to me), onReceive gets called twice for every button push
+
           if (volumePushes == 0.5)
           {
             CoroutineScope(Dispatchers.Main).launch {
               delay(doublePressTimeout - buttonReleaseTimeout)
-              waitWhileButtonDown()
+              buttonDown()
 
             }
           }
@@ -185,7 +185,7 @@ class VolumeButtonHelper(private var context: Context,
     }
 
     // ---------------------------------------------------------------------------------------------
-    private fun waitWhileButtonDown()
+    private fun buttonDown()
     {
       val startVolumePushes = volumePushes
 
@@ -202,7 +202,7 @@ class VolumeButtonHelper(private var context: Context,
 
           }
 
-          waitWhileButtonDown()
+          buttonDown()
 
         }
         else
