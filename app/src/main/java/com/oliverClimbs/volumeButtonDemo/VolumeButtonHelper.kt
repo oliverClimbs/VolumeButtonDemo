@@ -71,14 +71,14 @@ class VolumeButtonHelper(private var context: Context,
       /*************************************
        * BroadcastReceiver does not get triggered for VOLUME_CHANGE_ACTION
        * if the screen is off and no media is playing.
-       * Playing a silent media file or giving your app a "heartbeat" solves that.
+       * Playing a silent media file solves that.
        *************************************/
       if (enabledScreenOff)
       {
         mediaPlayer =
           MediaPlayer.create(context,
-//                             R.raw.heartbeat)
                              R.raw.silence)
+//                             R.raw.rapidheartbeat)
             .apply {
               isLooping = true
               setWakeMode(context, PARTIAL_WAKE_LOCK)
@@ -175,7 +175,7 @@ class VolumeButtonHelper(private var context: Context,
 
           if (volumePushes == 0.5)
           {
-            CoroutineScope(Dispatchers.Main).launch {
+            CoroutineScope(Dispatchers.Default).launch {
               delay(doublePressTimeout - buttonReleaseTimeout)
               buttonDown()
 
