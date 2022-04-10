@@ -129,6 +129,7 @@ class ForegroundService : Service()
     releaseWakeLock()
     stopForeground(STOP_FOREGROUND_REMOVE)
     volumeButtonHelper.unregisterReceiver()
+    volumeButtonHelper.finalizeMediaPlayer()
 
   }
 }

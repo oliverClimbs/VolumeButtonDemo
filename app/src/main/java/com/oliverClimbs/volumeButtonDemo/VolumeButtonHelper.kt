@@ -7,7 +7,6 @@ import android.content.IntentFilter
 import android.media.AudioManager
 import android.media.AudioManager.STREAM_MUSIC
 import android.media.MediaPlayer
-import android.os.PowerManager.PARTIAL_WAKE_LOCK
 import android.util.Log
 import com.oliverClimbs.volumeButtonDemo.ForegroundService.Companion.TAG
 import com.oliverClimbs.volumeButtonDemo.VolumeButtonHelper.Direction.*
@@ -33,7 +32,7 @@ class VolumeButtonHelper(private var context: Context,
     Release
   }
 
-  private lateinit var mediaPlayer: MediaPlayer
+  private var mediaPlayer: MediaPlayer? = null
   private var volumeBroadCastReceiver: VolumeBroadCastReceiver? = null
   private var volumeChangeListener: VolumeChangeListener? = null
 
@@ -59,6 +58,7 @@ class VolumeButtonHelper(private var context: Context,
   var currentVolume = -1
     private set
 
+
   // ---------------------------------------------------------------------------------------------
   init
   {
@@ -75,16 +75,18 @@ class VolumeButtonHelper(private var context: Context,
        *************************************/
       if (enabledScreenOff)
       {
-        mediaPlayer =
-          MediaPlayer.create(context,
-                             R.raw.silence)
-//                             R.raw.rapidheartbeat)
-            .apply {
-              isLooping = true
-              setWakeMode(context, PARTIAL_WAKE_LOCK)
-              start()
+        mediaPlayer = MediaPlayer.create(context,
+                                         R.raw.silence)
 
-            }
+        if (mediaPlayer != null)
+        {
+          mediaPlayer?.isLooping = true
+          mediaPlayer?.start()
+
+        }
+        else
+          Log.e(TAG, "Unable to initialize MediaPlayer")
+
       }
     }
     else
@@ -123,6 +125,15 @@ class VolumeButtonHelper(private var context: Context,
       volumeBroadCastReceiver = null
 
     }
+  }
+
+  // ---------------------------------------------------------------------------------------------
+  fun finalizeMediaPlayer()
+  {
+    mediaPlayer?.reset()
+    mediaPlayer?.release()
+    mediaPlayer = null
+
   }
 
   // ---------------------------------------------------------------------------------------------
@@ -175,7 +186,7 @@ class VolumeButtonHelper(private var context: Context,
 
           if (volumePushes == 0.5)
           {
-            CoroutineScope(Dispatchers.Default).launch {
+            CoroutineScope(Dispatchers.Main).launch {
               delay(doublePressTimeout - buttonReleaseTimeout)
               buttonDown()
 
